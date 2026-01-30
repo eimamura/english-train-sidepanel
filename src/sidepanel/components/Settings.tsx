@@ -10,7 +10,7 @@ export function Settings() {
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
 
-  // APIキーを読み込み
+  // Load API key
   useEffect(() => {
     getApiKey().then((key) => {
       if (key) {

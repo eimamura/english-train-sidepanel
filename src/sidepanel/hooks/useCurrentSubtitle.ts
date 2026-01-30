@@ -19,7 +19,7 @@ export function useCurrentSubtitle() {
           }
         }
       );
-    }, 500); // 0.5秒ごとに更新
+    }, 500); // Update every 0.5 seconds
 
     return () => clearInterval(interval);
   }, []);

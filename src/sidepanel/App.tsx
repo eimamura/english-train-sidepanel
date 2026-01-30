@@ -15,7 +15,7 @@ function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('main');
   const { videoData, loading } = useVideoData(videoId);
 
-  // 現在のタブから動画IDを取得
+  // Get video ID from current tab
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'getCurrentVideoId' }, (response: Message) => {
       if (response.type === 'currentVideoId') {
@@ -23,7 +23,7 @@ function App() {
       }
     });
 
-    // 定期的に動画IDをチェック（動画が切り替わった場合に対応）
+    // Periodically check video ID (to handle video changes)
     const interval = setInterval(() => {
       chrome.runtime.sendMessage({ type: 'getCurrentVideoId' }, (response: Message) => {
         if (response.type === 'currentVideoId') {
@@ -35,7 +35,7 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // 動画が切り替わったら選択をリセット
+  // Reset selection when video changes
   useEffect(() => {
     setSelectedWord(null);
   }, [videoId]);

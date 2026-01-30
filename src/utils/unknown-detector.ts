@@ -1,7 +1,7 @@
 import type { WordIndex, UnknownWordStats } from '../types/index';
 
 /**
- * 既知単語セットから未知語を判定して統計を生成
+ * Detect unknown words from known words set and generate statistics
  */
 export function detectUnknownWords(
   wordIndex: WordIndex,
@@ -10,7 +10,7 @@ export function detectUnknownWords(
   const statsMap = new Map<string, { count: number; firstOccurrence: number; sampleContext: string }>();
   
   wordIndex.forEach((occurrences, word) => {
-    // 既知単語はスキップ
+    // Skip known words
     if (knownWords.has(word)) {
       return;
     }
@@ -26,7 +26,7 @@ export function detectUnknownWords(
     });
   });
   
-  // 統計配列に変換して頻度順でソート
+  // Convert to array and sort by frequency
   const stats: UnknownWordStats[] = Array.from(statsMap.entries()).map(([word, data]) => ({
     word,
     ...data,

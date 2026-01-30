@@ -14,7 +14,7 @@ export function CurrentSubtitle() {
     );
   }
 
-  // 単語に分割して未知語をハイライト
+  // Split into words and highlight unknown words
   const words = subtitle.text.split(/(\s+)/);
   const tokens = tokenize(subtitle.text);
 

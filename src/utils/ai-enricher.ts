@@ -3,14 +3,14 @@ import type { UnknownWordStats, WordEnrichment } from '../types/index';
 const DEFAULT_ENRICH_COUNT = 50;
 
 /**
- * OpenAI APIを使用して未知語をenrich
+ * Enrich unknown words using OpenAI API
  */
 export async function enrichWords(
   words: UnknownWordStats[],
   apiKey: string,
   maxCount: number = DEFAULT_ENRICH_COUNT
 ): Promise<Record<string, WordEnrichment>> {
-  // 上位N件のみ処理
+  // Process only top N words
   const topWords = words.slice(0, maxCount);
   
   if (topWords.length === 0) {
@@ -77,7 +77,7 @@ Example format:
       throw new Error('No content in API response');
     }
 
-    // JSONを抽出（コードブロックがある場合を考慮）
+    // Extract JSON (considering code blocks)
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     const jsonText = jsonMatch ? jsonMatch[0] : content;
     
@@ -86,13 +86,13 @@ Example format:
     return enrichment;
   } catch (error) {
     console.error('AI enrichment error:', error);
-    // エラー時は空のオブジェクトを返す
+    // Return empty object on error
     return {};
   }
 }
 
 /**
- * APIキーをストレージから取得
+ * Get API key from storage
  */
 export async function getApiKey(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -103,7 +103,7 @@ export async function getApiKey(): Promise<string | null> {
 }
 
 /**
- * APIキーをストレージに保存
+ * Save API key to storage
  */
 export async function setApiKey(apiKey: string): Promise<void> {
   return new Promise((resolve) => {

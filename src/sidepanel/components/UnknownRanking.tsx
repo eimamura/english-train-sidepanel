@@ -101,9 +101,9 @@ function getFilteredStats(stats: UnknownWordStats[], tab: TabType): UnknownWordS
   if (tab === 'unknown') {
     return stats;
   } else if (tab === 'all') {
-    return stats; // 全体ランキングは同じ（未知語のみを表示）
+    return stats; // All ranking is the same (showing only unknown words)
   } else {
-    // 初出単語: 最初の出現時刻順
+    // First occurrence words: sorted by first occurrence time
     return [...stats].sort((a, b) => a.firstOccurrence - b.firstOccurrence);
   }
 }

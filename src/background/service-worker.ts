@@ -7,11 +7,11 @@ import { buildWordIndex, wordIndexToRecord } from '../utils/word-indexer';
 import { detectUnknownWords } from '../utils/unknown-detector';
 import { enrichWords, getApiKey } from '../utils/ai-enricher';
 
-// 動画ごとのセグメント蓄積
+// Segment buffer per video
 const segmentBuffers = new Map<string, SubtitleSegment[]>();
 
 /**
- * 既知単語セットを取得
+ * Get known words set
  */
 async function getKnownWords(): Promise<Set<string>> {
   return new Promise((resolve) => {
@@ -23,7 +23,7 @@ async function getKnownWords(): Promise<Set<string>> {
 }
 
 /**
- * 動画キャッシュを取得
+ * Get video cache
  */
 async function getVideoCache(videoId: string): Promise<VideoCache | null> {
   return new Promise((resolve) => {
@@ -35,7 +35,7 @@ async function getVideoCache(videoId: string): Promise<VideoCache | null> {
 }
 
 /**
- * 動画キャッシュを保存
+ * Save video cache
  */
 async function saveVideoCache(cache: VideoCache): Promise<void> {
   return new Promise((resolve) => {
@@ -46,30 +46,30 @@ async function saveVideoCache(cache: VideoCache): Promise<void> {
 }
 
 /**
- * 字幕セグメントを処理してキャッシュを更新
+ * Process subtitle segments and update cache
  */
 async function processSegments(videoId: string, segments: SubtitleSegment[]): Promise<void> {
-  // 既存のキャッシュを確認
+  // Check existing cache
   const existingCache = await getVideoCache(videoId);
   
-  // 既に処理済みの場合はスキップ（簡易チェック）
+  // Skip if already processed (simple check)
   if (existingCache && existingCache.segments.length >= segments.length * 0.9) {
     return;
   }
 
-  // 単語インデックスを生成
+  // Build word index
   const wordIndex = buildWordIndex(segments);
   
-  // 既知単語を取得
+  // Get known words
   const knownWords = await getKnownWords();
   
-  // 未知語を検出
+  // Detect unknown words
   const unknownStats = detectUnknownWords(wordIndex, knownWords);
   
-  // 既存のenrichmentを取得
+  // Get existing enrichment
   const existingEnrichment = existingCache?.enrichment || {};
   
-  // AI enrich（APIキーがある場合のみ）
+  // AI enrich (only if API key exists)
   const apiKey = await getApiKey();
   let enrichment = { ...existingEnrichment };
   
@@ -82,7 +82,7 @@ async function processSegments(videoId: string, segments: SubtitleSegment[]): Pr
     }
   }
 
-  // キャッシュを保存
+  // Save cache
   const cache: VideoCache = {
     videoId,
     segments,
@@ -96,7 +96,7 @@ async function processSegments(videoId: string, segments: SubtitleSegment[]): Pr
 }
 
 /**
- * メッセージハンドラー
+ * Message handler
  */
 chrome.runtime.onMessage.addListener(
   (message: Message, _sender, sendResponse) => {
@@ -108,7 +108,7 @@ chrome.runtime.onMessage.addListener(
         return;
       }
 
-      // セグメントをバッファに追加
+      // Add segment to buffer
       if (!segmentBuffers.has(videoId)) {
         segmentBuffers.set(videoId, []);
       }
@@ -116,8 +116,8 @@ chrome.runtime.onMessage.addListener(
       const buffer = segmentBuffers.get(videoId)!;
       buffer.push(segment);
 
-      // 一定数溜まったら処理（または最後のセグメントの場合）
-      // 簡易実装: 10秒ごとに処理
+      // Process when buffer reaches certain size (or last segment)
+      // Simple implementation: process every 10 segments
       if (buffer.length % 10 === 0 || segment.endMs > 0) {
         processSegments(videoId, [...buffer]).catch(console.error);
       }
@@ -135,9 +135,9 @@ chrome.runtime.onMessage.addListener(
         sendResponse({ type: 'videoData', data: cache });
       });
 
-      return true; // 非同期レスポンス用
+      return true; // For async response
     } else if (message.type === 'getCurrentVideoId') {
-      // 現在のYouTubeタブの動画IDを取得
+      // Get video ID from current YouTube tab
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.url) {
           try {
@@ -151,7 +151,7 @@ chrome.runtime.onMessage.addListener(
           sendResponse({ type: 'currentVideoId', data: null });
         }
       });
-      return true; // 非同期レスポンス用
+      return true; // For async response
     }
 
     return true;
@@ -159,7 +159,7 @@ chrome.runtime.onMessage.addListener(
 );
 
 /**
- * Side Panelを開く（YouTubeページで拡張機能アイコンをクリック時）
+ * Open Side Panel (when extension icon is clicked on YouTube page)
  */
 chrome.action.onClicked.addListener((tab) => {
   if (tab.id) {
@@ -168,7 +168,7 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 /**
- * YouTubeページでSide Panelを自動的に有効化
+ * Automatically enable Side Panel on YouTube pages
  */
 chrome.tabs.onUpdated.addListener((tabId, _changeInfo, tab) => {
   if (tab.url && tab.url.includes('youtube.com/watch')) {

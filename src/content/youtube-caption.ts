@@ -1,6 +1,6 @@
 import type { SubtitleSegment, Message } from '../types/index';
 
-// 字幕セグメントの蓄積
+// Accumulate subtitle segments
 const segments: SubtitleSegment[] = [];
 let currentVideoId: string | null = null;
 let observer: MutationObserver | null = null;
@@ -8,7 +8,7 @@ let lastSegmentText = '';
 let lastSegmentTime = 0;
 
 /**
- * 現在の動画時間を取得（ミリ秒）
+ * Get current video time in milliseconds
  */
 function getCurrentTimeMs(): number {
   const video = document.querySelector('video');
@@ -17,7 +17,7 @@ function getCurrentTimeMs(): number {
 }
 
 /**
- * 字幕テキストを取得
+ * Get subtitle text
  */
 function getSubtitleText(): string {
   const captionSegments = document.querySelectorAll('.ytp-caption-segment');
@@ -30,7 +30,7 @@ function getSubtitleText(): string {
 }
 
 /**
- * 動画IDを取得
+ * Get video ID
  */
 function getVideoId(): string | null {
   const urlParams = new URLSearchParams(window.location.search);
@@ -38,7 +38,7 @@ function getVideoId(): string | null {
 }
 
 /**
- * 字幕セグメントをBackgroundに送信
+ * Send subtitle segment to background worker
  */
 function sendSegment(segment: SubtitleSegment) {
   chrome.runtime.sendMessage<Message>({
@@ -49,12 +49,12 @@ function sendSegment(segment: SubtitleSegment) {
 }
 
 /**
- * 字幕の変更を監視
+ * Observe subtitle changes
  */
 function observeSubtitles() {
   const captionContainer = document.querySelector('.ytp-caption-window-container');
   if (!captionContainer) {
-    // 字幕コンテナが見つからない場合、少し待って再試行
+    // Retry if caption container not found
     setTimeout(observeSubtitles, 1000);
     return;
   }
@@ -67,14 +67,14 @@ function observeSubtitles() {
       return;
     }
 
-    // 新しいセグメントを検出
+    // Detect new segment
     const segment: SubtitleSegment = {
       startMs: lastSegmentTime || currentTime,
       endMs: currentTime,
       text: subtitleText,
     };
 
-    // 重複を避ける（同じテキストが連続しないように）
+    // Avoid duplicates (same text shouldn't be consecutive)
     if (segments.length === 0 || segments[segments.length - 1].text !== subtitleText) {
       segments.push(segment);
       sendSegment(segment);
@@ -91,24 +91,24 @@ function observeSubtitles() {
 }
 
 /**
- * 動画の変更を監視
+ * Observe video changes
  */
 function observeVideoChange() {
   const videoId = getVideoId();
   
   if (videoId !== currentVideoId) {
-    // 新しい動画に切り替わった
+    // New video detected
     currentVideoId = videoId;
     segments.length = 0;
     lastSegmentText = '';
     lastSegmentTime = 0;
     
-    // 字幕監視を再開
+    // Restart subtitle observation
     if (observer) {
       observer.disconnect();
     }
     
-    // 少し待ってから字幕監視を開始（ページ読み込み待ち）
+    // Wait a bit before starting subtitle observation (wait for page load)
     setTimeout(() => {
       observeSubtitles();
     }, 2000);
@@ -116,7 +116,7 @@ function observeVideoChange() {
 }
 
 /**
- * 動画を指定時間にシーク
+ * Seek video to specified time
  */
 function seekTo(timeMs: number) {
   const video = document.querySelector('video');
@@ -127,7 +127,7 @@ function seekTo(timeMs: number) {
 }
 
 /**
- * 現在の字幕を取得（Side Panelからのリクエスト用）
+ * Get current subtitle (for Side Panel requests)
  */
 chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
   if (message.type === 'getCurrentTime') {
@@ -146,24 +146,24 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
     sendResponse({ success: true });
   }
   
-  return true; // 非同期レスポンス用
+  return true; // For async response
 });
 
 /**
- * 初期化
+ * Initialize
  */
 function init() {
-  // 動画IDを取得
+  // Get video ID
   currentVideoId = getVideoId();
   
-  // 動画の変更を監視（SPAなので）
+  // Observe video changes (for SPA)
   setInterval(observeVideoChange, 1000);
   
-  // 字幕監視を開始
+  // Start subtitle observation
   observeSubtitles();
 }
 
-// ページ読み込み完了後に初期化
+// Initialize after page load
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {

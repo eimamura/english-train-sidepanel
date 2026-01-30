@@ -2,7 +2,7 @@ import type { SubtitleSegment, WordOccurrence, WordIndex } from '../types/index'
 import { extractWordsWithPosition } from './tokenizer';
 
 /**
- * 字幕セグメントから単語インデックスを生成
+ * Build word index from subtitle segments
  */
 export function buildWordIndex(segments: SubtitleSegment[]): WordIndex {
   const wordIndex: WordIndex = new Map();
@@ -20,7 +20,7 @@ export function buildWordIndex(segments: SubtitleSegment[]): WordIndex {
         wordIndex.set(word, []);
       }
       
-      // 前後のセグメントから文脈を取得
+      // Get context from previous and next segments
       const prevSegment = segments[segmentId - 1];
       const nextSegment = segments[segmentId + 1];
       const context = [
@@ -44,7 +44,7 @@ export function buildWordIndex(segments: SubtitleSegment[]): WordIndex {
 }
 
 /**
- * WordIndexをRecord形式に変換（ストレージ用）
+ * Convert WordIndex to Record format (for storage)
  */
 export function wordIndexToRecord(wordIndex: WordIndex): Record<string, WordOccurrence[]> {
   const record: Record<string, WordOccurrence[]> = {};
@@ -55,7 +55,7 @@ export function wordIndexToRecord(wordIndex: WordIndex): Record<string, WordOccu
 }
 
 /**
- * Record形式からWordIndexに変換
+ * Convert Record format to WordIndex
  */
 export function recordToWordIndex(record: Record<string, WordOccurrence[]>): WordIndex {
   const wordIndex: WordIndex = new Map();

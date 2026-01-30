@@ -1,4 +1,4 @@
-// ストップワードリスト（基本語）
+// Stop words list (common words)
 const STOP_WORDS = new Set([
   'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
   'of', 'with', 'by', 'from', 'as', 'is', 'are', 'was', 'were', 'be',
@@ -13,23 +13,23 @@ const STOP_WORDS = new Set([
 ]);
 
 /**
- * 単語を正規化（小文字化、記号除去）
+ * Normalize word (lowercase, remove punctuation)
  */
 export function normalizeWord(word: string): string {
   return word.toLowerCase().replace(/[^\w]/g, '');
 }
 
 /**
- * テキストをトークン化して正規化された単語の配列を返す
+ * Tokenize text and return array of normalized words
  */
 export function tokenize(text: string): string[] {
-  // 単語に分割（空白、句読点で分割）
+  // Split into words (by whitespace and punctuation)
   const words = text.split(/\s+/);
   
   return words
     .map(normalizeWord)
     .filter(word => {
-      // 空文字列とストップワードを除外
+      // Exclude empty strings and stop words
       return word.length > 0 && !STOP_WORDS.has(word);
     });
 }

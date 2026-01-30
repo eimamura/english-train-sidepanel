@@ -52,8 +52,8 @@ pnpm build
 
 4. Load the extension in Brave:
    - Open `brave://extensions/`
-   - Enable "Developer mode" (右上のトグル)
-   - Click "Load unpacked" (パッケージ化されていない拡張機能を読み込む)
+   - Enable "Developer mode" (toggle in the top right)
+   - Click "Load unpacked" (or "パッケージ化されていない拡張機能を読み込む" in Japanese)
    - Select the `dist` folder from this project
 
 ## Usage
@@ -75,14 +75,14 @@ pnpm build
 
 ### Setting Up AI Enrichment
 
-1. Open the side panel and click "設定" (Settings)
+1. Open the side panel and click "Settings" (設定 button)
 2. Enter your OpenAI API key
-3. Click "保存" (Save)
+3. Click "Save" (保存 button)
 4. The extension will automatically enrich unknown words (top 50 by default)
 
 ### Managing Known Words
 
-1. Go to Settings (設定)
+1. Go to Settings
 2. Add words manually or import a list
 3. Words can be exported for backup
 4. Known words are excluded from the unknown ranking

@@ -1,22 +1,22 @@
-// 字幕セグメント
+// Subtitle segment
 export interface SubtitleSegment {
   startMs: number;
   endMs: number;
   text: string;
 }
 
-// 単語出現位置
+// Word occurrence position
 export interface WordOccurrence {
   startMs: number;
   endMs: number;
   segmentId: number;
-  context: string; // 前後の文脈
+  context: string; // Context from surrounding segments
 }
 
-// 単語インデックス
+// Word index
 export type WordIndex = Map<string, WordOccurrence[]>;
 
-// 未知語統計
+// Unknown word statistics
 export interface UnknownWordStats {
   word: string;
   count: number;
@@ -24,7 +24,7 @@ export interface UnknownWordStats {
   sampleContext: string;
 }
 
-// AI enrich結果
+// AI enrichment result
 export interface WordEnrichment {
   ja_translation: string;
   meaning_en: string;
@@ -36,17 +36,17 @@ export interface WordEnrichment {
   };
 }
 
-// 動画キャッシュ（ストレージ用にシリアライズ可能な形式）
+// Video cache (serializable format for storage)
 export interface VideoCache {
   videoId: string;
   segments: SubtitleSegment[];
-  wordIndex: Record<string, WordOccurrence[]>; // MapをRecordに変換（シリアライズ用）
+  wordIndex: Record<string, WordOccurrence[]>; // Converted from Map for serialization
   unknownStats: UnknownWordStats[];
-  enrichment: Record<string, WordEnrichment>; // MapをRecordに変換
+  enrichment: Record<string, WordEnrichment>; // Converted from Map
   timestamp: number;
 }
 
-// メッセージ型
+// Message type
 export interface Message {
   type: 'subtitle' | 'getVideoData' | 'getCurrentTime' | 'seekTo' | 'videoData' | 'currentSubtitle' | 'getCurrentVideoId' | 'currentVideoId';
   data?: any;

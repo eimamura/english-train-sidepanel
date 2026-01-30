@@ -8,7 +8,7 @@ interface TimelineListProps {
 
 export function TimelineList({ word: _word, occurrences }: TimelineListProps) {
   const handleSeek = (timeMs: number) => {
-    // Content Scriptにシーク命令を送信
+    // Send seek command to Content Script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
         chrome.tabs.sendMessage(tabs[0].id, {

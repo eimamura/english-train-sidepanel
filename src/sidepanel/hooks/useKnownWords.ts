@@ -4,7 +4,7 @@ export function useKnownWords() {
   const [knownWords, setKnownWords] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  // 既知単語を読み込み
+  // Load known words
   useEffect(() => {
     chrome.storage.local.get(['knownWords'], (result) => {
       const words = result.knownWords || [];
@@ -13,7 +13,7 @@ export function useKnownWords() {
     });
   }, []);
 
-  // 既知単語を保存
+  // Save known words
   const saveKnownWords = useCallback((words: Set<string>) => {
     const wordsArray = Array.from(words);
     chrome.storage.local.set({ knownWords: wordsArray }, () => {
@@ -21,7 +21,7 @@ export function useKnownWords() {
     });
   }, []);
 
-  // 単語を追加
+  // Add word
   const addWord = useCallback(
     (word: string) => {
       const newSet = new Set(knownWords);
@@ -31,7 +31,7 @@ export function useKnownWords() {
     [knownWords, saveKnownWords]
   );
 
-  // 単語を削除
+  // Remove word
   const removeWord = useCallback(
     (word: string) => {
       const newSet = new Set(knownWords);
@@ -41,7 +41,7 @@ export function useKnownWords() {
     [knownWords, saveKnownWords]
   );
 
-  // 単語が既知かチェック
+  // Check if word is known
   const isKnown = useCallback(
     (word: string) => {
       return knownWords.has(word.toLowerCase());
