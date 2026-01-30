@@ -204,6 +204,106 @@ None required. API key is stored in browser storage via the Settings UI.
 2. Verify stop words aren't filtering them out
 3. Ensure subtitles are being captured (check console)
 
+## Debugging
+
+### Opening DevTools
+
+1. **Background Service Worker**:
+   - Go to `brave://extensions/` (or `chrome://extensions/`)
+   - Find your extension
+   - Click "service worker" link (or "Inspect views: service worker")
+   - This opens DevTools for the background script
+
+2. **Content Script** (YouTube page):
+   - Open a YouTube video page
+   - Press `F12` or right-click → "Inspect"
+   - The console shows logs from content scripts
+   - Check the "Console" tab for errors and logs
+
+3. **Side Panel**:
+   - Open the side panel
+   - Right-click inside the side panel → "Inspect"
+   - Or use `Ctrl+Shift+I` (Windows/Linux) or `Cmd+Option+I` (Mac)
+   - This opens DevTools specifically for the side panel
+
+### Debugging Tips
+
+**Background Service Worker:**
+- Check console logs for message handling
+- Monitor `chrome.storage.local` changes in Application tab
+- Use `console.log()` to trace data flow
+- Check Network tab for API calls
+
+**Content Script:**
+- Verify subtitle elements are detected: `document.querySelector('.ytp-caption-segment')`
+- Check if MutationObserver is working
+- Monitor messages sent to background: `chrome.runtime.sendMessage()`
+- Check for YouTube DOM structure changes
+
+**Side Panel:**
+- React DevTools extension can be helpful
+- Check React component state and props
+- Monitor hooks (useVideoData, useKnownWords, etc.)
+- Verify Chrome Storage API calls
+
+### Common Debugging Commands
+
+In Background Service Worker console:
+```javascript
+// Check known words
+chrome.storage.local.get(['knownWords'], console.log);
+
+// Check video cache
+chrome.storage.local.get(['video_VIDEO_ID'], console.log);
+
+// Check API key
+chrome.storage.local.get(['openaiApiKey'], console.log);
+```
+
+In Content Script console (YouTube page):
+```javascript
+// Check if captions are visible
+document.querySelectorAll('.ytp-caption-segment');
+
+// Check current video ID
+new URLSearchParams(window.location.search).get('v');
+```
+
+### Hot Reloading During Development
+
+1. Run `pnpm dev` in watch mode
+2. After code changes, reload the extension:
+   - Go to `brave://extensions/`
+   - Click the reload icon on your extension card
+3. Refresh the YouTube page (for content script changes)
+4. Side panel changes may require closing and reopening the panel
+
+### Viewing Extension Logs
+
+All console logs from different parts:
+- **Background**: Service Worker DevTools console
+- **Content Script**: YouTube page DevTools console
+- **Side Panel**: Side Panel DevTools console
+
+### Debugging Network Requests
+
+- Background Service Worker: Check Network tab in Service Worker DevTools
+- Side Panel: Check Network tab in Side Panel DevTools
+- Look for OpenAI API calls and their responses
+
+### Common Errors and Solutions
+
+**Service Worker Registration Failed:**
+- Ensure `manifest.json` has `"type": "module"` in background section
+- Check that service worker file path is correct
+- Verify the file exists and is properly built
+- Check browser console for detailed error messages
+
+**Disconnected Port Object:**
+- This usually means a message was sent to a closed port
+- Ensure content scripts are properly injected
+- Check that message listeners are set up correctly
+
 ## Future Enhancements
 
 - [ ] Phrase detection (multi-word expressions)

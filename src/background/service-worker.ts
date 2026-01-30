@@ -9,6 +9,29 @@ import { enrichWords, getApiKey } from '../utils/ai-enricher';
 
 // Segment buffer per video
 const segmentBuffers = new Map<string, SubtitleSegment[]>();
+const flushTimers = new Map<string, number>();
+
+function flushBuffer(videoId: string) {
+  const buffer = segmentBuffers.get(videoId);
+  if (!buffer || buffer.length === 0) {
+    flushTimers.delete(videoId);
+    return;
+  }
+
+  const segmentsToProcess = buffer.splice(0, buffer.length);
+  segmentBuffers.set(videoId, []);
+  flushTimers.delete(videoId);
+  processSegments(videoId, segmentsToProcess).catch(console.error);
+}
+
+function scheduleFlush(videoId: string) {
+  if (flushTimers.has(videoId)) {
+    return;
+  }
+
+  const timerId = setTimeout(() => flushBuffer(videoId), 1000);
+  flushTimers.set(videoId, timerId);
+}
 
 /**
  * Get known words set
@@ -116,10 +139,10 @@ chrome.runtime.onMessage.addListener(
       const buffer = segmentBuffers.get(videoId)!;
       buffer.push(segment);
 
-      // Process when buffer reaches certain size (or last segment)
-      // Simple implementation: process every 10 segments
-      if (buffer.length % 10 === 0 || segment.endMs > 0) {
-        processSegments(videoId, [...buffer]).catch(console.error);
+      if (buffer.length >= 10) {
+        flushBuffer(videoId);
+      } else {
+        scheduleFlush(videoId);
       }
 
       sendResponse({ success: true });

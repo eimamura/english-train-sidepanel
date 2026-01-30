@@ -37,14 +37,39 @@ function getVideoId(): string | null {
   return urlParams.get('v');
 }
 
-/**
- * Send subtitle segment to background worker
- */
-function sendSegment(segment: SubtitleSegment) {
-  chrome.runtime.sendMessage<Message>({
-    type: 'subtitle',
-    data: segment,
-    videoId: currentVideoId || undefined,
+const segmentQueue: SubtitleSegment[] = [];
+let flushQueueTimer: number | null = null;
+
+function queueSegment(segment: SubtitleSegment) {
+  segmentQueue.push(segment);
+
+  if (segmentQueue.length >= 5) {
+    flushSegmentQueue();
+    return;
+  }
+
+  if (flushQueueTimer) {
+    return;
+  }
+
+  flushQueueTimer = setTimeout(() => {
+    flushQueueTimer = null;
+    flushSegmentQueue();
+  }, 500);
+}
+
+function flushSegmentQueue() {
+  if (segmentQueue.length === 0) {
+    return;
+  }
+
+  const segmentsToSend = segmentQueue.splice(0, segmentQueue.length);
+  segmentsToSend.forEach((segment) => {
+    chrome.runtime.sendMessage<Message>({
+      type: 'subtitle',
+      data: segment,
+      videoId: currentVideoId || undefined,
+    });
   });
 }
 
@@ -77,7 +102,7 @@ function observeSubtitles() {
     // Avoid duplicates (same text shouldn't be consecutive)
     if (segments.length === 0 || segments[segments.length - 1].text !== subtitleText) {
       segments.push(segment);
-      sendSegment(segment);
+      queueSegment(segment);
       lastSegmentText = subtitleText;
       lastSegmentTime = currentTime;
     }

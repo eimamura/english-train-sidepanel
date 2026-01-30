@@ -12,7 +12,8 @@
     "https://www.youtube.com/*"
   ],
   "background": {
-    "service_worker": "src/background/service-worker.ts"
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
   },
   "content_scripts": [
     {
