@@ -344,14 +344,28 @@ export default function Home() {
                     borderRadius: "10px",
                     background: "rgba(255,255,255,0.1)",
                     border: "1px solid rgba(255,255,255,0.2)",
-                    color: "inherit",
+                    color: "#e0e0e0",
                     fontSize: "0.95rem",
                     cursor: changingModel ? "not-allowed" : "pointer",
-                    opacity: changingModel ? 0.6 : 1
+                    opacity: changingModel ? 0.6 : 1,
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e0e0e0' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0.75rem center",
+                    paddingRight: "2.5rem"
                   }}
                 >
                   {modelInfo.stt_models.map((model) => (
-                    <option key={model} value={model}>
+                    <option 
+                      key={model} 
+                      value={model}
+                      style={{
+                        background: "#1e1e2e",
+                        color: "#e0e0e0"
+                      }}
+                    >
                       {model} {model === modelInfo.current_stt_model ? "(current)" : ""}
                     </option>
                   ))}
@@ -379,20 +393,42 @@ export default function Home() {
                     borderRadius: "10px",
                     background: "rgba(255,255,255,0.1)",
                     border: "1px solid rgba(255,255,255,0.2)",
-                    color: "inherit",
+                    color: "#e0e0e0",
                     fontSize: "0.95rem",
                     cursor: changingModel ? "not-allowed" : "pointer",
-                    opacity: changingModel ? 0.6 : 1
+                    opacity: changingModel ? 0.6 : 1,
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e0e0e0' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0.75rem center",
+                    paddingRight: "2.5rem"
                   }}
                 >
                   {modelInfo.llm_models.length > 0 ? (
                     modelInfo.llm_models.map((model) => (
-                      <option key={model} value={model}>
+                      <option 
+                        key={model} 
+                        value={model}
+                        style={{
+                          background: "#1e1e2e",
+                          color: "#e0e0e0"
+                        }}
+                      >
                         {model} {model === modelInfo.current_llm_model ? "(current)" : ""}
                       </option>
                     ))
                   ) : (
-                    <option value="">No models available</option>
+                    <option 
+                      value=""
+                      style={{
+                        background: "#1e1e2e",
+                        color: "#e0e0e0"
+                      }}
+                    >
+                      No models available
+                    </option>
                   )}
                 </select>
               </div>

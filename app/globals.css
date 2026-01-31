@@ -93,3 +93,31 @@ body {
 * {
   transition: all 0.3s ease;
 }
+
+/* Select dropdown styling for dark theme */
+select {
+  color: #e0e0e0;
+}
+
+select option {
+  background: #1e1e2e;
+  color: #e0e0e0;
+  padding: 0.5rem;
+}
+
+select:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.5);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+@media (prefers-color-scheme: light) {
+  select {
+    color: #1a1a1a;
+  }
+  
+  select option {
+    background: #ffffff;
+    color: #1a1a1a;
+  }
+}
