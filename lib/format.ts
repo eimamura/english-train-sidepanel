@@ -16,7 +16,15 @@ export function formatFeedbackAsMarkdown(feedback: Feedback): string {
     "",
     `DRILL: ${feedback.drill}`,
     "",
-    `SCORE: ${feedback.score}`,
+    `OVERALL SCORE: ${feedback.score}/100`,
+    "",
+    "SCORE BREAKDOWN:",
+    `- Vocabulary: ${feedback.score_breakdown.vocabulary}/100`,
+    `  Reason: ${feedback.score_breakdown.vocabulary_reason}`,
+    `- Grammar: ${feedback.score_breakdown.grammar}/100`,
+    `  Reason: ${feedback.score_breakdown.grammar_reason}`,
+    `- Understandability: ${feedback.score_breakdown.understandability}/100`,
+    `  Reason: ${feedback.score_breakdown.understandability_reason}`,
   ];
 
   if (feedback.timings_ms) {

@@ -4,6 +4,7 @@ FastAPI application for English learning feedback
 import os
 import sys
 import time
+import json
 from pathlib import Path
 
 # Ensure backend directory is in Python path
@@ -18,7 +19,7 @@ from pydantic_settings import BaseSettings
 from pydantic import BaseModel
 from typing import Optional, List
 
-from models import FeedbackResponse, TimingsMs
+from models import FeedbackResponse, TimingsMs, PromptsResponse
 from stt import STTEngine
 from llm import LLMFeedbackGenerator
 from convert import convert_to_wav, save_temp_audio
@@ -227,6 +228,93 @@ async def feedback_endpoint(audio: UploadFile = File(...)):
         raise HTTPException(
             status_code=500,
             detail=f"Error processing audio: {str(e)}"
+        )
+
+
+@app.get("/prompts", response_model=PromptsResponse)
+async def get_prompts():
+    """
+    Generate random practice prompts using LLM
+    
+    Returns:
+        PromptsResponse with topics, grammar points, and advice
+    """
+    try:
+        prompt = """Generate practice prompts for English learning. Return ONLY valid JSON in this exact format:
+{
+  "topics": ["Topic 1", "Topic 2", "Topic 3"],
+  "grammar_points": ["Grammar point 1", "Grammar point 2", "Grammar point 3"],
+  "advice": "One piece of advice for the practice session"
+}
+
+Requirements:
+- topics: 3 interesting and varied topics for speaking practice (e.g., "Your favorite hobby", "A recent trip")
+- grammar_points: 3 specific grammar points to practice (e.g., "Past tense", "Present perfect", "Conditional sentences")
+- advice: 1 helpful tip for improving English speaking
+
+Make them diverse and engaging. Return ONLY the JSON, no additional text."""
+
+        # Call Ollama
+        response = llm_generator.client.generate(
+            model=llm_generator.model,
+            prompt=prompt,
+            options={
+                "temperature": 0.8,  # Higher temperature for more variety
+            }
+        )
+        
+        # Extract JSON from response
+        response_text = response.get("response", "")
+        
+        # Try to extract JSON from response (might have markdown code blocks)
+        json_text = response_text.strip()
+        if json_text.startswith("```json"):
+            json_text = json_text[7:]
+        if json_text.startswith("```"):
+            json_text = json_text[3:]
+        if json_text.endswith("```"):
+            json_text = json_text[:-3]
+        json_text = json_text.strip()
+        
+        # Parse JSON
+        prompts_data = json.loads(json_text)
+        
+        # Validate with Pydantic
+        prompts = PromptsResponse(**prompts_data)
+        
+        return prompts
+        
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        # Fallback to default prompts
+        return PromptsResponse(
+            topics=[
+                "Your favorite hobby",
+                "A recent trip you took",
+                "Your dream job"
+            ],
+            grammar_points=[
+                "Past tense (was/were, went, did)",
+                "Present perfect (have/has + past participle)",
+                "Future tense (will, going to)"
+            ],
+            advice="Speak slowly and clearly. Take your time to form complete sentences."
+        )
+    except Exception as e:
+        print(f"Error generating prompts: {e}")
+        # Fallback to default prompts
+        return PromptsResponse(
+            topics=[
+                "Your favorite hobby",
+                "A recent trip you took",
+                "Your dream job"
+            ],
+            grammar_points=[
+                "Past tense (was/were, went, did)",
+                "Present perfect (have/has + past participle)",
+                "Future tense (will, going to)"
+            ],
+            advice="Speak slowly and clearly. Take your time to form complete sentences."
         )
 
 

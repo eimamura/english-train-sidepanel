@@ -24,9 +24,63 @@ export default function Home() {
   const [selectedSttModel, setSelectedSttModel] = useState<string>("");
   const [selectedLlmModel, setSelectedLlmModel] = useState<string>("");
   const [changingModel, setChangingModel] = useState(false);
+  const [recordingPrompts, setRecordingPrompts] = useState<{
+    topics: string[];
+    grammarPoints: string[];
+    advice: string;
+  } | null>(null);
+  const [loadingPrompts, setLoadingPrompts] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  const fetchPrompts = async () => {
+    setLoadingPrompts(true);
+    try {
+      const response = await fetch("/api/prompts");
+      if (response.ok) {
+        const data = await response.json();
+        setRecordingPrompts({
+          topics: data.topics || [],
+          grammarPoints: data.grammar_points || [],
+          advice: data.advice || ""
+        });
+      } else {
+        // Fallback to default prompts if API fails
+        setRecordingPrompts({
+          topics: [
+            "Your favorite hobby",
+            "A recent trip you took",
+            "Your dream job"
+          ],
+          grammarPoints: [
+            "Past tense (was/were, went, did)",
+            "Present perfect (have/has + past participle)",
+            "Future tense (will, going to)"
+          ],
+          advice: "Speak slowly and clearly. Take your time to form complete sentences."
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch prompts:", err);
+      // Fallback to default prompts
+      setRecordingPrompts({
+        topics: [
+          "Your favorite hobby",
+          "A recent trip you took",
+          "Your dream job"
+        ],
+        grammarPoints: [
+          "Past tense (was/were, went, did)",
+          "Present perfect (have/has + past participle)",
+          "Future tense (will, going to)"
+        ],
+        advice: "Speak slowly and clearly. Take your time to form complete sentences."
+      });
+    } finally {
+      setLoadingPrompts(false);
+    }
+  };
 
   // Check backend health on mount
   useEffect(() => {
@@ -34,6 +88,49 @@ export default function Home() {
     loadHistory();
     loadModels();
   }, []);
+
+  // Keyboard shortcuts - Space and Esc only
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input field
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      // Space: Start/Stop recording (Push-to-talk style)
+      if (e.code === "Space" && !e.repeat) {
+        e.preventDefault();
+        if (state === "idle") {
+          startRecording();
+        } else if (state === "done") {
+          // Reset and start recording
+          resetAndStartRecording();
+        } else if (state === "recording") {
+          stopRecording();
+        }
+      }
+
+      // Escape: Stop recording or reset
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (state === "recording") {
+          stopRecording();
+        } else if (state === "done" || state === "error") {
+          reset();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   const loadModels = async () => {
     try {
@@ -105,6 +202,9 @@ export default function Home() {
   const startRecording = async () => {
     try {
       setError(null);
+      // Fetch prompts from LLM before starting recording
+      await fetchPrompts();
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       const mediaRecorder = new MediaRecorder(stream, {
@@ -199,6 +299,14 @@ export default function Home() {
     setState("idle");
     setFeedback(null);
     setError(null);
+    setRecordingPrompts(null);
+  };
+
+  const resetAndStartRecording = async () => {
+    reset();
+    // Wait a bit for state to update, then start recording
+    await new Promise(resolve => setTimeout(resolve, 50));
+    startRecording();
   };
 
   const toggleHistoryItem = (id: string) => {
@@ -470,6 +578,36 @@ export default function Home() {
         )}
       </div>
 
+      {/* Keyboard Shortcuts Help */}
+      <div className="glass" style={{
+        padding: "0.75rem 1rem",
+        borderRadius: "10px",
+        marginBottom: "1rem",
+        fontSize: "0.85rem",
+        opacity: 0.8,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "1.5rem",
+        flexWrap: "wrap"
+      }}>
+        <span>⌨️ Shortcuts:</span>
+        <span><kbd style={{
+          padding: "0.25rem 0.5rem",
+          background: "rgba(255,255,255,0.1)",
+          borderRadius: "4px",
+          fontSize: "0.8rem",
+          fontFamily: "monospace"
+        }}>Space</kbd> Start/Stop Recording</span>
+        <span><kbd style={{
+          padding: "0.25rem 0.5rem",
+          background: "rgba(255,255,255,0.1)",
+          borderRadius: "4px",
+          fontSize: "0.8rem",
+          fontFamily: "monospace"
+        }}>Esc</kbd> Cancel/Reset</span>
+      </div>
+
       {/* Controls */}
       <div style={{ marginBottom: "2rem", textAlign: "center" }}>
         {state === "idle" && (
@@ -518,7 +656,8 @@ export default function Home() {
                 boxShadow: "0 10px 30px rgba(239, 68, 68, 0.4)",
                 animation: "pulse 1.5s infinite",
                 position: "relative",
-                overflow: "hidden"
+                overflow: "hidden",
+                marginBottom: "2rem"
               }}
             >
               <span style={{ position: "relative", zIndex: 1 }}>⏹ Stop Recording</span>
@@ -539,7 +678,8 @@ export default function Home() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "0.5rem"
+              gap: "0.5rem",
+              marginBottom: "2rem"
             }}>
               <span style={{ 
                 width: "8px", 
@@ -551,6 +691,141 @@ export default function Home() {
               }}></span>
               Recording...
             </div>
+
+            {/* Recording Prompts */}
+            {loadingPrompts && (
+              <div className="glass" style={{
+                padding: "1.5rem",
+                borderRadius: "16px",
+                marginTop: "1rem",
+                textAlign: "center"
+              }}>
+                <div style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                  ⏳ Generating practice prompts...
+                </div>
+              </div>
+            )}
+
+            {recordingPrompts && !loadingPrompts && (
+              <div className="glass" style={{
+                padding: "1.5rem",
+                borderRadius: "16px",
+                marginTop: "1rem",
+                animation: "fadeIn 0.6s ease"
+              }}>
+                <div style={{
+                  fontSize: "1.1rem",
+                  fontWeight: "700",
+                  marginBottom: "1.5rem",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent"
+                }}>
+                  💡 Practice Prompts
+                </div>
+
+                {/* Topics */}
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <div style={{
+                    fontSize: "0.9rem",
+                    fontWeight: "600",
+                    marginBottom: "0.75rem",
+                    opacity: 0.9,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}>
+                    <span>📝</span>
+                    <span>Topics (choose one):</span>
+                  </div>
+                  <ul style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem"
+                  }}>
+                    {recordingPrompts.topics.map((topic, i) => (
+                      <li key={i} style={{
+                        padding: "0.75rem",
+                        borderRadius: "10px",
+                        background: "rgba(102, 126, 234, 0.15)",
+                        borderLeft: "4px solid #667eea",
+                        fontSize: "0.95rem",
+                        lineHeight: "1.5"
+                      }}>
+                        {i + 1}. {topic}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Grammar Points */}
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <div style={{
+                    fontSize: "0.9rem",
+                    fontWeight: "600",
+                    marginBottom: "0.75rem",
+                    opacity: 0.9,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}>
+                    <span>📚</span>
+                    <span>Grammar Points (try to use):</span>
+                  </div>
+                  <ul style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem"
+                  }}>
+                    {recordingPrompts.grammarPoints.map((grammar, i) => (
+                      <li key={i} style={{
+                        padding: "0.75rem",
+                        borderRadius: "10px",
+                        background: "rgba(16, 185, 129, 0.15)",
+                        borderLeft: "4px solid #10b981",
+                        fontSize: "0.95rem",
+                        lineHeight: "1.5"
+                      }}>
+                        {i + 1}. {grammar}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Advice */}
+                <div>
+                  <div style={{
+                    fontSize: "0.9rem",
+                    fontWeight: "600",
+                    marginBottom: "0.75rem",
+                    opacity: 0.9,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}>
+                    <span>✨</span>
+                    <span>Advice:</span>
+                  </div>
+                  <div style={{
+                    padding: "1rem",
+                    borderRadius: "10px",
+                    background: "rgba(245, 158, 11, 0.15)",
+                    borderLeft: "4px solid #f59e0b",
+                    fontSize: "0.95rem",
+                    lineHeight: "1.6",
+                    fontStyle: "italic"
+                  }}>
+                    {recordingPrompts.advice}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -588,7 +863,7 @@ export default function Home() {
 
         {state === "done" && feedback && (
           <button
-            onClick={reset}
+            onClick={resetAndStartRecording}
             className="glass"
             style={{
               padding: "0.75rem 1.5rem",
@@ -715,7 +990,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Score Badge */}
+          {/* Overall Score Badge */}
           <div style={{ 
             marginBottom: "1.5rem",
             display: "flex",
@@ -732,7 +1007,7 @@ export default function Home() {
               fontSize: "1.1rem",
               boxShadow: `0 4px 15px ${getScoreColor(feedback.score)}40`
             }}>
-              Score: {feedback.score}/100
+              Overall Score: {feedback.score}/100
             </div>
             <div style={{
               flex: 1,
@@ -748,6 +1023,132 @@ export default function Home() {
                 background: `linear-gradient(90deg, ${getScoreColor(feedback.score)}, ${getScoreColor(feedback.score)}dd)`,
                 transition: "width 0.5s ease"
               }}></div>
+            </div>
+          </div>
+
+          {/* Score Breakdown */}
+          <div style={{
+            marginBottom: "1.5rem",
+            padding: "1.25rem",
+            borderRadius: "12px",
+            background: "rgba(102, 126, 234, 0.1)",
+            border: "1px solid rgba(102, 126, 234, 0.2)"
+          }}>
+            <div style={{
+              fontSize: "1rem",
+              fontWeight: "700",
+              marginBottom: "1rem",
+              color: "#667eea"
+            }}>
+              📊 Detailed Score Breakdown
+            </div>
+            
+            {/* Vocabulary */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.5rem"
+              }}>
+                <span style={{ fontWeight: "600", fontSize: "0.95rem" }}>
+                  📚 Vocabulary: {feedback.score_breakdown.vocabulary}/100
+                </span>
+                <div style={{
+                  width: "120px",
+                  height: "6px",
+                  background: "rgba(255,255,255,0.2)",
+                  borderRadius: "3px",
+                  overflow: "hidden"
+                }}>
+                  <div style={{
+                    width: `${feedback.score_breakdown.vocabulary}%`,
+                    height: "100%",
+                    background: getScoreColor(feedback.score_breakdown.vocabulary),
+                    transition: "width 0.5s ease"
+                  }}></div>
+                </div>
+              </div>
+              <div style={{
+                fontSize: "0.85rem",
+                opacity: 0.8,
+                paddingLeft: "0.5rem",
+                lineHeight: "1.5"
+              }}>
+                {feedback.score_breakdown.vocabulary_reason}
+              </div>
+            </div>
+
+            {/* Grammar */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.5rem"
+              }}>
+                <span style={{ fontWeight: "600", fontSize: "0.95rem" }}>
+                  ✏️ Grammar: {feedback.score_breakdown.grammar}/100
+                </span>
+                <div style={{
+                  width: "120px",
+                  height: "6px",
+                  background: "rgba(255,255,255,0.2)",
+                  borderRadius: "3px",
+                  overflow: "hidden"
+                }}>
+                  <div style={{
+                    width: `${feedback.score_breakdown.grammar}%`,
+                    height: "100%",
+                    background: getScoreColor(feedback.score_breakdown.grammar),
+                    transition: "width 0.5s ease"
+                  }}></div>
+                </div>
+              </div>
+              <div style={{
+                fontSize: "0.85rem",
+                opacity: 0.8,
+                paddingLeft: "0.5rem",
+                lineHeight: "1.5"
+              }}>
+                {feedback.score_breakdown.grammar_reason}
+              </div>
+            </div>
+
+            {/* Understandability */}
+            <div>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.5rem"
+              }}>
+                <span style={{ fontWeight: "600", fontSize: "0.95rem" }}>
+                  🇺🇸 Understandability: {feedback.score_breakdown.understandability}/100
+                </span>
+                <div style={{
+                  width: "120px",
+                  height: "6px",
+                  background: "rgba(255,255,255,0.2)",
+                  borderRadius: "3px",
+                  overflow: "hidden"
+                }}>
+                  <div style={{
+                    width: `${feedback.score_breakdown.understandability}%`,
+                    height: "100%",
+                    background: getScoreColor(feedback.score_breakdown.understandability),
+                    transition: "width 0.5s ease"
+                  }}></div>
+                </div>
+              </div>
+              <div style={{
+                fontSize: "0.85rem",
+                opacity: 0.8,
+                paddingLeft: "0.5rem",
+                lineHeight: "1.5"
+              }}>
+                {feedback.score_breakdown.understandability_reason}
+              </div>
             </div>
           </div>
 

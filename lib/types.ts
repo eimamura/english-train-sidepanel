@@ -1,4 +1,16 @@
 /**
+ * Score breakdown by category
+ */
+export type ScoreBreakdown = {
+  vocabulary: number;
+  grammar: number;
+  understandability: number;
+  vocabulary_reason: string;
+  grammar_reason: string;
+  understandability_reason: string;
+};
+
+/**
  * Feedback response type from backend
  */
 export type Feedback = {
@@ -8,6 +20,7 @@ export type Feedback = {
   better_options: string[];
   drill: string;
   score: number;
+  score_breakdown: ScoreBreakdown;
   timings_ms?: {
     stt?: number;
     llm?: number;
